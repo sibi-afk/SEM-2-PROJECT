@@ -1,0 +1,6 @@
+{
+  "name": "Stochastic Pathfinding Visualizer",
+  "description": "Semester 2 AI & Probabilistic Planning project implementing Stochastic Markov Decision Processes, Value Iteration, and Deep Q-Learning pathfinding under uncertainty.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
