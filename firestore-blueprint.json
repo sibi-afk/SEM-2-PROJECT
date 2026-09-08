@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with authentication details",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "RecentPath": {
+      "title": "RecentPath",
+      "description": "Calculated optimal stochastic path sequences saved for users",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "sequence": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Array of directional steps e.g. ['RIGHT', 'DOWN']"
+        },
+        "pathCoordinates": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "number" }
+          }
+        },
+        "startPos": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "targetPos": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "gridDimension": { "type": "number" },
+        "stepsCount": { "type": "number" },
+        "slipsCount": { "type": "number" },
+        "accumulatedReward": { "type": "number" },
+        "reachedGoal": { "type": "boolean" },
+        "slipProb": { "type": "number" },
+        "survivorName": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "sequence", "stepsCount", "timestamp"]
+    },
+    "SavedMap": {
+      "title": "SavedMap",
+      "description": "Custom uploaded or saved terrain maps with dimensions, barriers, and hazards",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "dimension": { "type": "number" },
+        "grid": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "number" }
+          }
+        },
+        "startPos": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "targetPos": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "dimension", "grid", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Private user profile document"
+    },
+    "users/{userId}/recent_paths/{pathId}": {
+      "schema": { "$ref": "#/entities/RecentPath" },
+      "description": "User's calculated stochastic path sequences"
+    },
+    "users/{userId}/custom_maps/{mapId}": {
+      "schema": { "$ref": "#/entities/SavedMap" },
+      "description": "User's uploaded custom maps"
+    }
+  }
+}

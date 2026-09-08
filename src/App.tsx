@@ -6,29 +6,33 @@ import {
   Code,
   GraduationCap,
   Sparkles,
-  Layers,
-  HelpCircle,
-  ExternalLink,
+  Sliders,
 } from "lucide-react";
 import { Sem2Project } from "./types";
 import { DEFAULT_SEM2_PROJECTS } from "./data/defaultProjects";
 import { Navbar } from "./components/Navbar";
-import { ProjectSelectorModal } from "./components/ProjectSelectorModal";
 import { ModelInferenceTab } from "./components/ModelInferenceTab";
 import { ArchitectureTab } from "./components/ArchitectureTab";
 import { DatasetTab } from "./components/DatasetTab";
 import { CodeExportTab } from "./components/CodeExportTab";
 import { VivaDefenseTab } from "./components/VivaDefenseTab";
+import { ModelInspectorModal, ModelParameters } from "./components/ModelInspectorModal";
 
 export default function App() {
-  const [currentProject, setCurrentProject] = useState<Sem2Project>(
-    DEFAULT_SEM2_PROJECTS[0]
-  );
+  const currentProject = DEFAULT_SEM2_PROJECTS[0];
   const [activeTab, setActiveTab] = useState<
     "inference" | "architecture" | "dataset" | "code" | "viva"
   >("inference");
-  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modelParams, setModelParams] = useState<ModelParameters>({
+    grid_dimension: 12,
+    obstacle_density: 22,
+    stochastic_slip_prob: 0.15,
+    discount_factor_gamma: 0.95,
+    step_energy_budget: 60,
+    dynamic_hazard_intensity: "Moderate (Stochastic Swarms)",
+  });
 
   useEffect(() => {
     // Check server health and API status
@@ -42,15 +46,6 @@ export default function App() {
       });
   }, []);
 
-  const handleSelectProject = (proj: Sem2Project) => {
-    setCurrentProject(proj);
-  };
-
-  const handleCustomProjectCreated = (proj: Sem2Project) => {
-    setCurrentProject(proj);
-    setActiveTab("inference");
-  };
-
   return (
     <div className="min-h-screen bg-[#050505] text-[#e0e0e0] flex flex-col font-sans selection:bg-[#00D1FF] selection:text-black relative">
       {/* Subtle radial ambient lighting */}
@@ -59,13 +54,13 @@ export default function App() {
       {/* Top Navigation */}
       <Navbar
         currentProject={currentProject}
-        onOpenSelector={() => setIsSelectorOpen(true)}
         hasApi={hasApiKey}
+        onOpenModal={() => setIsModalOpen(true)}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 relative z-10">
-        {/* Project Notification / Chat Context Bar */}
+        {/* Project Notification / Context Bar */}
         <div className="bg-[#0a0a0a] border border-[#ffffff10] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_0_20px_rgba(0,0,0,0.8)]">
           <div className="flex items-start sm:items-center gap-3">
             <div className="p-2 rounded-lg bg-[#00D1FF10] text-[#00D1FF] border border-[#00D1FF30] flex-shrink-0 shadow-[0_0_10px_rgba(0,209,255,0.15)]">
@@ -73,10 +68,10 @@ export default function App() {
             </div>
             <div>
               <div className="text-[11px] font-mono font-bold tracking-widest uppercase text-[#00D1FF]">
-                SEM-2 PROJECT RUNTIME INITIALIZED
+                SEM-2 CAPSTONE MODEL DEPLOYED & CALIBRATED
               </div>
               <div className="text-xs text-white/80 font-mono mt-0.5">
-                Active: <span className="text-white font-bold">{currentProject.name}</span>{" "}
+                Model: <span className="text-white font-bold">{currentProject.name}</span>{" "}
                 <span className="text-white/40">[{currentProject.domain}]</span>
               </div>
             </div>
@@ -84,10 +79,12 @@ export default function App() {
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsSelectorOpen(true)}
-              className="text-xs font-mono font-bold uppercase tracking-wider px-3.5 py-1.5 rounded bg-[#00D1FF] hover:bg-[#33dbff] text-black transition-all cursor-pointer shadow-[0_0_12px_rgba(0,209,255,0.3)] hover:shadow-[0_0_18px_rgba(0,209,255,0.5)] active:scale-95"
+              onClick={() => setIsModalOpen(true)}
+              className="text-xs font-mono font-bold uppercase tracking-wider px-3.5 py-1.5 rounded bg-[#00D1FF] hover:bg-[#33dbff] text-black transition-all cursor-pointer shadow-[0_0_12px_rgba(0,209,255,0.3)] hover:shadow-[0_0_18px_rgba(0,209,255,0.5)] active:scale-95 flex items-center gap-1.5"
+              title="Open Modal to configure transition kernel and scenarios"
             >
-              [ SWITCH / ENTER PROJECT ]
+              <Sliders className="w-3.5 h-3.5" />
+              [ CALIBRATE MODEL MODAL ]
             </button>
           </div>
         </div>
@@ -158,7 +155,12 @@ export default function App() {
         {/* Tab View Container */}
         <div className="pt-2">
           {activeTab === "inference" && (
-            <ModelInferenceTab project={currentProject} />
+            <ModelInferenceTab
+              project={currentProject}
+              modelParams={modelParams}
+              onUpdateParams={setModelParams}
+              onOpenModal={() => setIsModalOpen(true)}
+            />
           )}
 
           {activeTab === "architecture" && (
@@ -179,13 +181,16 @@ export default function App() {
         </div>
       </main>
 
-      {/* Project Selector & Custom Name Modal */}
-      <ProjectSelectorModal
-        isOpen={isSelectorOpen}
-        onClose={() => setIsSelectorOpen(false)}
-        currentProjectId={currentProject.id}
-        onSelectProject={handleSelectProject}
-        onCustomProjectCreated={handleCustomProjectCreated}
+      {/* Modern High-Tech Model Calibration & Specs Modal */}
+      <ModelInspectorModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        project={currentProject}
+        currentParams={modelParams}
+        onApplyParams={(newParams) => {
+          setModelParams(newParams);
+          setActiveTab("inference");
+        }}
       />
 
       {/* Immersive Cyan Terminal Status Bar Footer */}

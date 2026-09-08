@@ -48,3 +48,74 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #00D1FF88;
 }
+
+/* Stochastic Hazard Swarm Pulse & Shimmer Animations */
+@keyframes swarm-pulse {
+  0%, 100% {
+    background-color: rgba(76, 5, 25, 0.65);
+    border-color: rgba(244, 63, 94, 0.4);
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.25), inset 0 0 6px rgba(244, 63, 94, 0.2);
+  }
+  50% {
+    background-color: rgba(136, 19, 55, 0.9);
+    border-color: rgba(251, 113, 133, 0.95);
+    box-shadow: 0 0 20px rgba(244, 63, 94, 0.7), inset 0 0 12px rgba(251, 113, 133, 0.5);
+  }
+}
+
+@keyframes swarm-shimmer {
+  0% {
+    transform: translateX(-100%) rotate(25deg);
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.6;
+  }
+  70% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateX(200%) rotate(25deg);
+    opacity: 0;
+  }
+}
+
+@keyframes swarm-particle {
+  0% {
+    transform: translate(0, 0) scale(0.8);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translate(var(--tw-particle-x, 2px), var(--tw-particle-y, -3px)) scale(1.15);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(0, 0) scale(0.8);
+    opacity: 0.3;
+  }
+}
+
+.hazard-swarm-cell {
+  animation: swarm-pulse 2.2s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.hazard-swarm-shimmer {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.05) 30%,
+    rgba(251, 113, 133, 0.4) 50%,
+    rgba(255, 255, 255, 0.15) 70%,
+    transparent 100%
+  );
+  animation: swarm-shimmer 2.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+

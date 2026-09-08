@@ -1,13 +1,17 @@
 import { useState, useEffect } from "react";
-import { Play, Sparkles, CheckCircle, AlertTriangle, HelpCircle, Activity, RotateCcw, Clock, Compass } from "lucide-react";
+import { Play, Sparkles, CheckCircle, AlertTriangle, HelpCircle, Activity, RotateCcw, Clock, Compass, Sliders } from "lucide-react";
 import { Sem2Project, InferenceResult } from "../types";
 import { StochasticPathfindingSimulator } from "./StochasticPathfindingSimulator";
+import { ModelParameters } from "./ModelInspectorModal";
 
 interface ModelInferenceTabProps {
   project: Sem2Project;
+  modelParams?: ModelParameters;
+  onUpdateParams?: (params: ModelParameters) => void;
+  onOpenModal?: () => void;
 }
 
-export function ModelInferenceTab({ project }: ModelInferenceTabProps) {
+export function ModelInferenceTab({ project, modelParams, onUpdateParams, onOpenModal }: ModelInferenceTabProps) {
   const isStochasticPathfinding =
     project.id === "stochastic-pathfinding" ||
     project.name.toLowerCase().includes("pathfinding");
@@ -17,6 +21,9 @@ export function ModelInferenceTab({ project }: ModelInferenceTabProps) {
     project.features.forEach((f) => {
       initial[f.name] = f.defaultVal;
     });
+    if (modelParams) {
+      Object.assign(initial, modelParams);
+    }
     return initial;
   });
 
@@ -24,25 +31,60 @@ export function ModelInferenceTab({ project }: ModelInferenceTabProps) {
   const [result, setResult] = useState<InferenceResult | null>(null);
   const [activePreset, setActivePreset] = useState<string | null>(null);
 
+  // Sync inputs if modelParams updates
+  useEffect(() => {
+    if (modelParams) {
+      setInputs((prev) => ({
+        ...prev,
+        ...modelParams,
+      }));
+    }
+  }, [modelParams]);
+
   // Update inputs if project changes
   useEffect(() => {
     const updated: Record<string, any> = {};
     project.features.forEach((f) => {
       updated[f.name] = f.defaultVal;
     });
+    if (modelParams) {
+      Object.assign(updated, modelParams);
+    }
     setInputs(updated);
     setResult(null);
     setActivePreset(null);
   }, [project.id]);
 
   const handleInputChange = (name: string, value: any) => {
-    setInputs((prev) => ({ ...prev, [name]: value }));
+    const updated = { ...inputs, [name]: value };
+    setInputs(updated);
     setActivePreset(null);
+    if (onUpdateParams && isStochasticPathfinding) {
+      onUpdateParams({
+        grid_dimension: Number(updated.grid_dimension) || 12,
+        obstacle_density: Number(updated.obstacle_density) || 22,
+        stochastic_slip_prob: Number(updated.stochastic_slip_prob) || 0.15,
+        discount_factor_gamma: Number(updated.discount_factor_gamma) || 0.95,
+        step_energy_budget: Number(updated.step_energy_budget) || 60,
+        dynamic_hazard_intensity: String(updated.dynamic_hazard_intensity || "Moderate (Stochastic Swarms)"),
+      });
+    }
   };
 
   const loadPreset = (preset: { label: string; values: Record<string, any> }) => {
-    setInputs({ ...preset.values });
+    const updated = { ...inputs, ...preset.values };
+    setInputs(updated);
     setActivePreset(preset.label);
+    if (onUpdateParams && isStochasticPathfinding) {
+      onUpdateParams({
+        grid_dimension: Number(updated.grid_dimension) || 12,
+        obstacle_density: Number(updated.obstacle_density) || 22,
+        stochastic_slip_prob: Number(updated.stochastic_slip_prob) || 0.15,
+        discount_factor_gamma: Number(updated.discount_factor_gamma) || 0.95,
+        step_energy_budget: Number(updated.step_energy_budget) || 60,
+        dynamic_hazard_intensity: String(updated.dynamic_hazard_intensity || "Moderate (Stochastic Swarms)"),
+      });
+    }
   };
 
   const handleReset = () => {
@@ -148,21 +190,34 @@ export function ModelInferenceTab({ project }: ModelInferenceTabProps) {
 
         {/* Quick Presets Bar */}
         {project.presetTestCases && project.presetTestCases.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-[#ffffff10] flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-mono text-white/40 uppercase tracking-wider">Telemetry Presets:</span>
-            {project.presetTestCases.map((preset) => (
+          <div className="mt-4 pt-4 border-t border-[#ffffff10] flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-mono text-white/40 uppercase tracking-wider">Telemetry Presets:</span>
+              {project.presetTestCases.map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => loadPreset(preset)}
+                  className={`px-3 py-1 rounded text-xs font-mono transition-all cursor-pointer border ${
+                    activePreset === preset.label
+                      ? "bg-[#00D1FF20] text-[#00D1FF] border-[#00D1FF] shadow-[0_0_10px_rgba(0,209,255,0.25)]"
+                      : "bg-black/60 hover:bg-[#ffffff08] text-white/70 border-[#ffffff15] hover:text-white"
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+
+            {onOpenModal && (
               <button
-                key={preset.label}
-                onClick={() => loadPreset(preset)}
-                className={`px-3 py-1 rounded text-xs font-mono transition-all cursor-pointer border ${
-                  activePreset === preset.label
-                    ? "bg-[#00D1FF20] text-[#00D1FF] border-[#00D1FF] shadow-[0_0_10px_rgba(0,209,255,0.25)]"
-                    : "bg-black/60 hover:bg-[#ffffff08] text-white/70 border-[#ffffff15] hover:text-white"
-                }`}
+                onClick={onOpenModal}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#00D1FF15] hover:bg-[#00D1FF25] border border-[#00D1FF40] hover:border-[#00D1FF] text-xs font-mono font-bold text-[#00D1FF] transition-all cursor-pointer shadow-sm group"
+                title="Open Modal to configure transition kernel, scenarios, and Bellman parameters"
               >
-                {preset.label}
+                <Sliders className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform" />
+                [ CONFIGURE IN MODAL ]
               </button>
-            ))}
+            )}
           </div>
         )}
       </div>
@@ -173,11 +228,22 @@ export function ModelInferenceTab({ project }: ModelInferenceTabProps) {
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-mono font-bold uppercase tracking-widest text-[#00D1FF] flex items-center gap-2">
               <Compass className="w-4 h-4" />
-              Full Functional Stochastic Pathfinding Engine (Value Iteration + Slip Kernel)
+              Target Person Locator & Search Engine (Bellman MDP + Stochastic Slip Kernel)
             </h3>
-            <span className="text-[10px] font-mono text-white/40">
-              Interactive 2D Grid Environment
-            </span>
+            <div className="flex items-center gap-2.5">
+              {onOpenModal && (
+                <button
+                  onClick={onOpenModal}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#ffffff08] hover:bg-[#00D1FF15] border border-[#ffffff15] hover:border-[#00D1FF50] text-[11px] font-mono text-white/80 hover:text-[#00D1FF] transition-all cursor-pointer"
+                >
+                  <Sliders className="w-3 h-3 text-[#00D1FF]" />
+                  TUNE IN MODAL
+                </button>
+              )}
+              <span className="text-[10px] font-mono text-white/40 hidden sm:inline-block">
+                Interactive 2D Grid Environment
+              </span>
+            </div>
           </div>
           <StochasticPathfindingSimulator
             gridDimension={Number(inputs.grid_dimension ?? 12)}
@@ -189,16 +255,16 @@ export function ModelInferenceTab({ project }: ModelInferenceTabProps) {
             onRunTelemetry={(stats) => {
               if (stats.reachedGoal) {
                 setResult({
-                  prediction: `Goal Reached in ${stats.steps} Steps (Bellman Reward: +${stats.reward})`,
-                  confidence: 96,
+                  prediction: `Person Located in ${stats.steps} Steps (Bellman Reward: +${stats.reward})`,
+                  confidence: 97,
                   latencyMs: 32,
-                  reasoning: `Stochastic agent navigated through ${stats.pathLength} tiles under ε=${inputs.stochastic_slip_prob ?? 0.15} slip uncertainty. Absorbed ${stats.slips} orthogonal deflections without obstacle collision.`,
+                  reasoning: `Stochastic search drone traversed ${stats.pathLength} tiles under ε=${inputs.stochastic_slip_prob ?? 0.15} slip friction, compensating for ${stats.slips} orthogonal deflections to safely extract survivor.`,
                   keyFactors: [
-                    { factor: "SLIP DYNAMICS (ε)", impact: stats.slips > 3 ? "Neutral" : "Positive", weight: 0.4 },
+                    { factor: "SLIP COMPENSATED (ε)", impact: stats.slips > 3 ? "Neutral" : "Positive", weight: 0.4 },
                     { factor: "BELLMAN POLICY π*(s)", impact: "Positive", weight: 0.35 },
-                    { factor: "BATTERY EFFICIENCY", impact: "Positive", weight: 0.25 },
+                    { factor: "BEACON LOCK & BATTERY", impact: "Positive", weight: 0.25 },
                   ],
-                  recommendation: "Path plan is robust to transition noise. Ready for Sem-2 evaluation and viva demonstration.",
+                  recommendation: "Rescue trajectory converged with zero catastrophic boundary rebounds. Ready for field deployment evaluation.",
                 });
               }
             }}
